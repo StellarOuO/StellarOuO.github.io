@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Journey v.19</title>
+    <title>My Journey v.21</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
         .expand-enter-active, .expand-leave-active { transition: all 0.3s ease; max-height: 500px; opacity: 1; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
         .img-preview { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-top: 8px; border: 1px solid #ddd; }
-        .shop-thumb { width: 100%; height: 120px; object-fit: cover; border-radius: 8px 8px 0 0; } /* V19: Bigger Shop Thumb */
+        .shop-thumb { width: 100%; height: 120px; object-fit: cover; border-radius: 8px 8px 0 0; }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .list-move, .list-enter-active, .list-leave-active { transition: all 0.4s ease; }
         .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(30px); }
@@ -224,8 +224,8 @@
 
                 <div v-if="currentTab === 'expenses'" class="space-y-5 p-4">
                     
-                    <div @click="showExchangeDetail = !showExchangeDetail" class="bg-white border border-emerald-100 rounded-2xl overflow-hidden cursor-pointer shadow-sm">
-                        <div class="px-4 py-3 flex justify-between items-center bg-emerald-50">
+                    <div class="bg-white border border-emerald-100 rounded-2xl overflow-hidden shadow-sm">
+                        <div @click="showExchangeDetail = !showExchangeDetail" class="px-4 py-3 flex justify-between items-center bg-emerald-50 cursor-pointer">
                             <span class="text-xs font-bold text-emerald-800 flex items-center">💱 平均匯率 (點擊管理)</span>
                             <div class="flex items-center space-x-2">
                                 <span class="text-lg font-bold text-emerald-700">{{ formatRate(exchangeSummary.avgRate) }}</span>
@@ -279,9 +279,21 @@
                     </div>
                     
                     <div v-if="hasDebts" class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-orange-300 text-xs">
-                        <h3 class="font-bold text-gray-700 mb-2 flex items-center">⚖️ 結算中心</h3>
-                        <div v-for="(amount, name) in debtSummary.potOwes" class="flex justify-between p-2 bg-orange-50 text-orange-800 rounded mb-1"><span>公數欠 <b>{{name}}</b> (墊支)</span><b>{{ activeTrip.currency || '¥' }}{{formatNumber(amount)}}</b></div>
-                        <div v-for="(amount, name) in debtSummary.owesPot" class="flex justify-between p-2 bg-blue-50 text-blue-800 rounded mb-1"><span><b>{{name}}</b> 借公數</span><b>{{ activeTrip.currency || '¥' }}{{formatNumber(amount)}}</b></div>
+                        <h3 class="font-bold text-gray-700 mb-2 flex items-center">⚖️ 結算中心 (未平欠款)</h3>
+                        <div v-for="(amount, name) in debtSummary.potOwes" class="flex justify-between items-center p-2 bg-orange-50 text-orange-800 rounded mb-1">
+                            <span>公數欠 <b>{{name}}</b></span>
+                            <div class="flex items-center space-x-2">
+                                <b class="font-mono">{{ activeTrip.currency || '¥' }}{{formatNumber(amount)}}</b>
+                                <button @click="settleDebt(name, amount, 'pot_pays')" class="bg-white border border-orange-200 text-orange-600 px-2 py-1 rounded text-[10px] shadow-sm active:scale-95">✅ 結清</button>
+                            </div>
+                        </div>
+                        <div v-for="(amount, name) in debtSummary.owesPot" class="flex justify-between items-center p-2 bg-blue-50 text-blue-800 rounded mb-1">
+                            <span><b>{{name}}</b> 欠公數</span>
+                            <div class="flex items-center space-x-2">
+                                <b class="font-mono">{{ activeTrip.currency || '¥' }}{{formatNumber(amount)}}</b>
+                                <button @click="settleDebt(name, amount, 'member_pays')" class="bg-white border border-blue-200 text-blue-600 px-2 py-1 rounded text-[10px] shadow-sm active:scale-95">✅ 結清</button>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-3">
@@ -307,14 +319,18 @@
                         <div v-for="t in filteredTransactions" :key="t.id" class="p-3 border-b border-gray-100 flex justify-between items-center last:border-0 hover:bg-gray-50 transition">
                             <div class="flex items-center">
                                 <div v-if="t.type === 'spend' || t.type === 'advance'" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center mr-3 text-lg">{{ getExpCatIcon(t.category) }}</div>
+                                <div v-else-if="t.type === 'settle_in' || t.type === 'settle_out'" class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center mr-3 text-lg">🤝</div>
                                 <div v-else class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center mr-3 text-lg text-indigo-500">{{ t.type === 'deposit' ? '💰' : '🤏' }}</div>
                                 <div>
-                                    <p class="font-bold text-gray-800 text-xs">{{ t.desc || getExpCatLabel(t.category) }} <span v-if="t.who && t.who !== 'All' && t.who !== '公數'" class="text-[9px] text-gray-500 bg-gray-100 px-1 rounded ml-1">{{t.who}}</span></p>
+                                    <p class="font-bold text-gray-800 text-xs">
+                                        <span v-if="t.type.startsWith('settle')">{{ t.type === 'settle_in' ? t.who + ' 還錢比公數' : '公數還錢比 ' + t.who }}</span>
+                                        <span v-else>{{ t.desc || getExpCatLabel(t.category) }} <span v-if="t.who && t.who !== 'All' && t.who !== '公數'" class="text-[9px] text-gray-500 bg-gray-100 px-1 rounded ml-1">{{t.who}}</span></span>
+                                    </p>
                                     <p class="text-[9px] text-gray-400 mt-0.5">{{ t.dateStr || t.date }} · {{ getTypeText(t.type) }}</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <div :class="getAmountColor(t.type)" class="font-bold text-xs">{{ t.type === 'deposit' || t.type === 'borrow' ? '+' : '-' }} {{ activeTrip.currency || '¥' }}{{ formatNumber(t.amount) }}</div>
+                                <div :class="getAmountColor(t.type)" class="font-bold text-xs">{{ t.type === 'deposit' || t.type === 'borrow' || t.type === 'settle_in' ? '+' : '-' }} {{ activeTrip.currency || '¥' }}{{ formatNumber(t.amount) }}</div>
                                 <button @click="deleteTransaction(t.id)" class="text-gray-300 text-[10px] px-2 py-1 -mr-2">刪除</button>
                             </div>
                         </div>
@@ -483,7 +499,7 @@
 
                         <div v-if="transMode !== 'spend'">
                             <select v-if="transMode !== 'deposit'" v-model="transForm.who" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-gray-700 outline-none"><option v-for="m in activeTrip.members" :value="m">{{ m }}</option></select>
-                            <div v-else class="text-center text-xs text-blue-600 bg-blue-50 p-3 rounded-xl font-bold">每人 {{ activeTrip.currency || '¥' }}{{transForm.amount}} (共 {{activeTrip.members.length}} 人)</div>
+                            <div v-else class="text-center text-xs text-blue-600 bg-blue-50 p-3 rounded-xl font-bold">每人 {{ activeTrip.currency || '¥' }}{{formatNumber(transForm.amount)}} (共 {{activeTrip.members.length}} 人)</div>
                         </div>
 
                         <div v-if="transMode === 'spend' || transMode === 'advance'">
@@ -670,19 +686,44 @@
                 },
                 currentPackingList() { return this.packingType === 'carryOn' ? this.activeTrip.packingList.carryOn : this.activeTrip.packingList.checkIn; },
                 currentGlobalList() { return this.globalPackingType === 'carryOn' ? this.globalPackingList.carryOn : this.globalPackingList.checkIn; },
-                walletCash() { return this.activeTrip.transactions ? this.activeTrip.transactions.reduce((t, x) => (x.type==='deposit'?t+x.amount:(x.type==='spend'||x.type==='borrow'?t-x.amount:t)), 0) : 0; },
+                walletCash() { 
+                    return this.activeTrip.transactions ? this.activeTrip.transactions.reduce((t, x) => {
+                        if (x.type === 'deposit') return t + x.amount;
+                        if (x.type === 'spend' || x.type === 'borrow') return t - x.amount;
+                        if (x.type === 'settle_in') return t + x.amount; // Member pays Pot (Cash Up)
+                        if (x.type === 'settle_out') return t - x.amount; // Pot pays Member (Cash Down)
+                        return t;
+                    }, 0) : 0; 
+                },
                 budgetPercentage() {
                      if (!this.activeTrip.transactions) return 0;
-                     const totalIn = this.activeTrip.transactions.reduce((t, x) => x.type === 'deposit' ? t + x.amount : t, 0);
+                     const totalIn = this.activeTrip.transactions.reduce((t, x) => (x.type === 'deposit' || x.type === 'settle_in') ? t + x.amount : t, 0);
                      if (totalIn === 0) return 0;
                      const current = this.walletCash;
                      return Math.max(0, Math.min(100, (current / totalIn) * 100));
                 },
+                // V20 Fixed: Computed Property for debts
+                hasDebts() {
+                    if(!this.activeTrip.transactions) return false;
+                    const s = this.debtSummary;
+                    return Object.keys(s.potOwes).length > 0 || Object.keys(s.owesPot).length > 0;
+                },
                 debtSummary() {
                     if(!this.activeTrip.transactions) return {potOwes:{}, owesPot:{}};
-                    let potOwes={}, owesPot={}; this.activeTrip.members.forEach(m=>{potOwes[m]=0; owesPot[m]=0;});
-                    this.activeTrip.transactions.forEach(t=>{ if(t.type==='advance'&&t.who) potOwes[t.who]+=t.amount; if(t.type==='borrow'&&t.who) owesPot[t.who]+=t.amount; });
-                    const cleanPot={}, cleanOwes={}; for(let m in potOwes)if(potOwes[m]>0)cleanPot[m]=potOwes[m]; for(let m in owesPot)if(owesPot[m]>0)cleanOwes[m]=owesPot[m];
+                    let potOwes={}, owesPot={}; 
+                    this.activeTrip.members.forEach(m=>{potOwes[m]=0; owesPot[m]=0;});
+                    
+                    this.activeTrip.transactions.forEach(t=>{ 
+                        if(t.type==='advance'&&t.who) potOwes[t.who]+=t.amount; 
+                        if(t.type==='borrow'&&t.who) owesPot[t.who]+=t.amount; 
+                        // V21 Settle Logic
+                        if(t.type==='settle_out'&&t.who) potOwes[t.who]-=t.amount; // Pot paid back member
+                        if(t.type==='settle_in'&&t.who) owesPot[t.who]-=t.amount; // Member paid back pot
+                    });
+                    
+                    const cleanPot={}, cleanOwes={}; 
+                    for(let m in potOwes) if(Math.round(potOwes[m])>0) cleanPot[m]=potOwes[m]; 
+                    for(let m in owesPot) if(Math.round(owesPot[m])>0) cleanOwes[m]=owesPot[m];
                     return {potOwes:cleanPot, owesPot:cleanOwes};
                 },
                 transTitle() { const map = { spend:'💸 公數現金支出', deposit:'💰 每人入金充值', advance:'🙋‍♂️ 幫公數墊支', borrow:'🤏 問公數借錢' }; return map[this.transMode]; },
@@ -712,13 +753,30 @@
                     const diff = new Date(trip.endDate) - new Date(trip.startDate);
                     return Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
                 },
-                // V19 New Logic
                 getCountdown(startDate) {
                     const today = new Date(); today.setHours(0,0,0,0);
                     const start = new Date(startDate); start.setHours(0,0,0,0);
                     const diff = start - today;
                     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
                     return days > 0 ? `⏳ 還有 ${days} 天` : (days === 0 ? '✈️ 今天出發' : null);
+                },
+                // V21 Logic: Settle Debt
+                settleDebt(who, amount, type) {
+                    // type: 'pot_pays' (settle_out) or 'member_pays' (settle_in)
+                    const confirmMsg = type === 'pot_pays' ? `確認公數已還 $${amount} 給 ${who}?` : `確認 ${who} 已還 $${amount} 給公數?`;
+                    if(confirm(confirmMsg)) {
+                        const txType = type === 'pot_pays' ? 'settle_out' : 'settle_in';
+                        const today = new Date().toISOString().split('T')[0];
+                        this.activeTrip.transactions.push({
+                            id: Date.now(),
+                            date: today,
+                            type: txType,
+                            who: who,
+                            amount: amount,
+                            desc: '🤝 結算'
+                        });
+                        this.saveAll();
+                    }
                 },
                 addSouvenirPerson() { if(this.newSouvenirPerson){ if(!this.activeTrip.souvenirPeople) this.activeTrip.souvenirPeople=[]; this.activeTrip.souvenirPeople.push({name:this.newSouvenirPerson, done:false}); this.newSouvenirPerson=''; this.saveAll(); } },
                 removeSouvenirPerson(i) { this.activeTrip.souvenirPeople.splice(i,1); this.saveAll(); },
@@ -731,22 +789,22 @@
                 
                 saveAll() { 
                     try {
-                        localStorage.setItem('travelAppV19_Trips', JSON.stringify(this.allTrips)); 
-                        localStorage.setItem('travelAppV19_GlobalPacking', JSON.stringify(this.globalPackingList)); 
+                        localStorage.setItem('travelAppV21_Trips', JSON.stringify(this.allTrips)); 
+                        localStorage.setItem('travelAppV21_GlobalPacking', JSON.stringify(this.globalPackingList)); 
                     } catch (e) {
                         alert('⚠️ 儲存空間已滿！請備份後刪除舊旅程或圖片。');
                     }
                 },
                 loadAllData() { 
                     try {
-                        let data = localStorage.getItem('travelAppV19_Trips') || localStorage.getItem('travelAppV16_Trips') || localStorage.getItem('travelAppV15_Trips');
+                        let data = localStorage.getItem('travelAppV21_Trips') || localStorage.getItem('travelAppV19_Trips') || localStorage.getItem('travelAppV16_Trips');
                         this.allTrips = JSON.parse(data || '[]'); 
                         // Fix for V19 new properties
                         this.allTrips.forEach(t => {
                             if(!t.souvenirPeople) t.souvenirPeople = [];
                         });
 
-                        let gp = JSON.parse(localStorage.getItem('travelAppV19_GlobalPacking') || localStorage.getItem('travelAppV16_GlobalPacking') || localStorage.getItem('travelAppV15_GlobalPacking') || 'null');
+                        let gp = JSON.parse(localStorage.getItem('travelAppV21_GlobalPacking') || localStorage.getItem('travelAppV19_GlobalPacking') || localStorage.getItem('travelAppV16_GlobalPacking') || 'null');
                         if (!gp || (Array.isArray(gp) && gp.length === 0) || (!Array.isArray(gp) && gp.checkIn.length === 0)) {
                             this.globalPackingList = {
                                 checkIn: ["髮圈","內衣褲","衣物","外套","襪子","帽子","配件","飾品","睡衣","化妝品","保養品","電棒","梳子","卸妝","洗臉","牙刷、牙膏","化妝棉","隱眼盒、隱眼藥水","隱眼","藥品","保健食品","手機充電器","行動電源充電器","Apple Watch Charger","拖鞋","垃圾袋","毛巾","口罩","盥洗用品","雨傘","泳裝","防曬用品","衛生棉","髮尾油","萬國轉接頭","Tim"],
@@ -760,8 +818,8 @@
                 },
                 clearAllData() {
                     if(confirm('⚠️ 警告：這會刪除所有資料且無法復原！確定嗎？')) {
-                        localStorage.removeItem('travelAppV19_Trips');
-                        localStorage.removeItem('travelAppV19_GlobalPacking');
+                        localStorage.removeItem('travelAppV21_Trips');
+                        localStorage.removeItem('travelAppV21_GlobalPacking');
                         location.reload();
                     }
                 },
