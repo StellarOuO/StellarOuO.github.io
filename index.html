@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Journey v.21</title>
+    <title>My Journey v.24</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -224,86 +224,116 @@
 
                 <div v-if="currentTab === 'expenses'" class="space-y-5 p-4">
                     
-                    <div class="bg-white border border-emerald-100 rounded-2xl overflow-hidden shadow-sm">
-                        <div @click="showExchangeDetail = !showExchangeDetail" class="px-4 py-3 flex justify-between items-center bg-emerald-50 cursor-pointer">
-                            <span class="text-xs font-bold text-emerald-800 flex items-center">💱 平均匯率 (點擊管理)</span>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-lg font-bold text-emerald-700">{{ formatRate(exchangeSummary.avgRate) }}</span>
-                                <span class="text-[10px] text-emerald-400">{{ showExchangeDetail ? '▲' : '▼' }}</span>
+                    <div class="flex bg-gray-100 p-1 rounded-xl mb-2">
+                        <button @click="expenseMode='pot'" :class="expenseMode==='pot'?'bg-white shadow text-indigo-600':'text-gray-400'" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all">🏛️ 公數 (Pot)</button>
+                        <button @click="expenseMode='me'" :class="expenseMode==='me'?'bg-white shadow text-indigo-600':'text-gray-400'" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all">👤 私己 (Me)</button>
+                    </div>
+
+                    <div v-if="expenseMode==='pot'">
+                        <div class="bg-white border border-emerald-100 rounded-2xl overflow-hidden shadow-sm mb-4">
+                            <div @click="showExchangeDetail = !showExchangeDetail" class="px-4 py-3 flex justify-between items-center bg-emerald-50 cursor-pointer">
+                                <span class="text-xs font-bold text-emerald-800 flex items-center">💱 平均匯率 (點擊管理)</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-lg font-bold text-emerald-700">{{ formatRate(exchangeSummary.avgRate) }}</span>
+                                    <span class="text-[10px] text-emerald-400">{{ showExchangeDetail ? '▲' : '▼' }}</span>
+                                </div>
                             </div>
-                        </div>
-                        <transition name="expand">
-                            <div v-if="showExchangeDetail" class="p-4 bg-white relative border-t border-emerald-50">
-                                <div class="flex gap-2 mb-3">
-                                    <input v-model.number="exchangeForm.hkd" placeholder="付出 HKD" class="w-1/2 p-2 bg-gray-50 rounded-lg text-xs outline-none">
-                                    <input v-model.number="exchangeForm.local" placeholder="換到外幣" class="w-1/2 p-2 bg-gray-50 rounded-lg text-xs outline-none">
-                                    <button @click.stop="saveExchange" class="bg-emerald-600 text-white px-3 rounded-lg text-xs font-bold whitespace-nowrap">新增</button>
-                                </div>
-                                <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                                    總投入: HKD ${{ formatNumber(exchangeSummary.totalHKD) }} <br> 
-                                    總獲得: {{ activeTrip.currency || '¥' }}{{ formatNumber(exchangeSummary.totalLocal) }}
-                                </div>
-                                <div class="mt-2 pt-2 border-t border-gray-100 max-h-24 overflow-y-auto">
-                                    <div v-for="ex in activeTrip.exchanges" :key="ex.id" class="flex justify-between text-[10px] text-gray-400 mb-1">
-                                        <span>${{ex.hkd}} → {{ex.local}}</span>
-                                        <button @click.stop="deleteExchange(ex.id)" class="text-red-300">x</button>
+                            <transition name="expand">
+                                <div v-if="showExchangeDetail" class="p-4 bg-white relative border-t border-emerald-50">
+                                    <div class="flex gap-2 mb-3">
+                                        <input v-model.number="exchangeForm.hkd" placeholder="付出 HKD" class="w-1/2 p-2 bg-gray-50 rounded-lg text-xs outline-none">
+                                        <input v-model.number="exchangeForm.local" placeholder="換到外幣" class="w-1/2 p-2 bg-gray-50 rounded-lg text-xs outline-none">
+                                        <button @click.stop="saveExchange" class="bg-emerald-600 text-white px-3 rounded-lg text-xs font-bold whitespace-nowrap">新增</button>
+                                    </div>
+                                    <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                                        總投入: HKD ${{ formatNumber(exchangeSummary.totalHKD) }} <br> 
+                                        總獲得: {{ activeTrip.currency || '¥' }}{{ formatNumber(exchangeSummary.totalLocal) }}
+                                    </div>
+                                    <div class="mt-2 pt-2 border-t border-gray-100 max-h-24 overflow-y-auto">
+                                        <div v-for="ex in activeTrip.exchanges" :key="ex.id" class="flex justify-between text-[10px] text-gray-400 mb-1">
+                                            <span>${{ex.hkd}} → {{ex.local}}</span>
+                                            <button @click.stop="deleteExchange(ex.id)" class="text-red-300">x</button>
+                                        </div>
                                     </div>
                                 </div>
+                            </transition>
+                        </div>
+
+                        <div class="bg-indigo-50 rounded-2xl p-3 border border-indigo-100 flex items-center space-x-2 mb-4">
+                            <span class="text-xs font-bold text-indigo-600">🧮 快速換算:</span>
+                            <input type="number" v-model="quickCalcVal" placeholder="外幣" class="w-20 p-1 text-center bg-white rounded text-xs outline-none">
+                            <span class="text-xs text-gray-500">= HKD ${{ formatNumber(quickCalcVal * (exchangeSummary.avgRate || 0)) }}</span>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden mb-4">
+                            <div class="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+                            <div class="relative z-10">
+                                 <div class="flex justify-between items-start mb-2">
+                                     <p class="text-xs opacity-80">公數餘額 (Cash)</p>
+                                     <button @click="openStats" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded text-[10px] backdrop-blur-sm transition">📊 統計</button>
+                                 </div>
+                                <h2 class="text-4xl font-bold tracking-tight mb-4">{{ activeTrip.currency || '¥' }} {{ formatNumber(walletCash) }}</h2>
+                                <div class="mb-4">
+                                    <div class="flex justify-between text-[10px] mb-1 opacity-70"><span>消耗進度</span><span>{{ Math.round(100 - budgetPercentage) }}% used</span></div>
+                                    <div class="w-full h-2 bg-black/20 rounded-full overflow-hidden"><div class="h-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-500" :style="{width: budgetPercentage + '%'}"></div></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button @click="openTransModal('spend')" class="bg-white text-indigo-700 hover:bg-gray-100 py-2.5 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition">💸 公數支出</button>
+                                    <button @click="openTransModal('deposit')" class="bg-indigo-500/50 hover:bg-indigo-500/70 border border-white/20 py-2.5 rounded-xl text-xs font-medium backdrop-blur-sm active:scale-95 transition">💰 充值</button>
+                                </div>
                             </div>
-                        </transition>
+                        </div>
+                        
+                        <div v-if="hasDebts" class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-orange-300 text-xs mb-4">
+                            <h3 class="font-bold text-gray-700 mb-2 flex items-center">⚖️ 結算中心 (未平欠款)</h3>
+                            <div v-for="(amount, name) in debtSummary.potOwes" class="flex justify-between items-center p-2 bg-orange-50 text-orange-800 rounded mb-1">
+                                <span>公數欠 <b>{{name}}</b></span>
+                                <div class="flex items-center space-x-2">
+                                    <b class="font-mono">{{ activeTrip.currency || '¥' }}{{formatNumber(amount)}}</b>
+                                    <button @click="settleDebt(name, amount, 'pot_pays')" class="bg-white border border-orange-200 text-orange-600 px-2 py-1 rounded text-[10px] shadow-sm active:scale-95">✅ 結清</button>
+                                </div>
+                            </div>
+                            <div v-for="(amount, name) in debtSummary.owesPot" class="flex justify-between items-center p-2 bg-blue-50 text-blue-800 rounded mb-1">
+                                <span><b>{{name}}</b> 欠公數</span>
+                                <div class="flex items-center space-x-2">
+                                    <b class="font-mono">{{ activeTrip.currency || '¥' }}{{formatNumber(amount)}}</b>
+                                    <button @click="settleDebt(name, amount, 'member_pays')" class="bg-white border border-blue-200 text-blue-600 px-2 py-1 rounded text-[10px] shadow-sm active:scale-95">✅ 結清</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <button @click="openTransModal('advance')" class="bg-orange-50 text-orange-700 py-3 rounded-xl text-xs font-bold shadow-sm border border-orange-100 active:scale-95 transition">🙋‍♂️ 我幫公數墊錢</button>
+                            <button @click="openTransModal('borrow')" class="bg-blue-50 text-blue-700 py-3 rounded-xl text-xs font-bold shadow-sm border border-blue-100 active:scale-95 transition">🤏 我借公數錢</button>
+                        </div>
                     </div>
 
-                    <div class="bg-indigo-50 rounded-2xl p-3 border border-indigo-100 flex items-center space-x-2">
-                        <span class="text-xs font-bold text-indigo-600">🧮 快速換算:</span>
-                        <input type="number" v-model="quickCalcVal" placeholder="外幣" class="w-20 p-1 text-center bg-white rounded text-xs outline-none">
-                        <span class="text-xs text-gray-500">= HKD ${{ formatNumber(quickCalcVal * (exchangeSummary.avgRate || 0)) }}</span>
-                    </div>
+                    <div v-if="expenseMode==='me'">
+                        <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden mb-4">
+                            <div class="absolute top-0 right-0 p-4 opacity-5 text-6xl">👤</div>
+                            <div class="relative z-10">
+                                <p class="text-xs opacity-70 mb-1">個人現金餘額 (Cash Balance)</p>
+                                <h2 class="text-4xl font-bold tracking-tight mb-4">{{ activeTrip.currency || '¥' }} {{ formatNumber(personalStats.balance) }}</h2>
+                                
+                                <div class="flex gap-2 text-center">
+                                    <div class="flex-1 bg-white/10 rounded-lg p-2"><div class="text-[10px] opacity-70">現金私伙</div><div class="font-bold text-sm">{{formatNumber(personalStats.spend)}}</div></div>
+                                    <div class="flex-1 border border-purple-400/30 bg-purple-500/10 rounded-lg p-2"><div class="text-[10px] opacity-80 text-purple-200">信用卡數</div><div class="font-bold text-sm text-purple-100">{{formatNumber(personalStats.credit)}}</div></div>
+                                    <div class="flex-1 bg-white/10 rounded-lg p-2"><div class="text-[10px] opacity-70">已夾公數</div><div class="font-bold text-sm">{{formatNumber(personalStats.contribute)}}</div></div>
+                                </div>
 
-                    <div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-                        <div class="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
-                        <div class="relative z-10">
-                             <div class="flex justify-between items-start mb-2">
-                                 <p class="text-xs opacity-80">公數餘額 (Cash)</p>
-                                 <button @click="openStats" class="bg-white/20 hover:bg-white/30 px-2 py-1 rounded text-[10px] backdrop-blur-sm transition">📊 統計</button>
-                             </div>
-                            <h2 class="text-4xl font-bold tracking-tight mb-4">{{ activeTrip.currency || '¥' }} {{ formatNumber(walletCash) }}</h2>
-                            <div class="mb-4">
-                                <div class="flex justify-between text-[10px] mb-1 opacity-70"><span>消耗進度</span><span>{{ Math.round(100 - budgetPercentage) }}% used</span></div>
-                                <div class="w-full h-2 bg-black/20 rounded-full overflow-hidden"><div class="h-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-500" :style="{width: budgetPercentage + '%'}"></div></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <button @click="openTransModal('spend')" class="bg-white text-indigo-700 hover:bg-gray-100 py-2.5 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition">💸 公數支出</button>
-                                <button @click="openTransModal('deposit')" class="bg-indigo-500/50 hover:bg-indigo-500/70 border border-white/20 py-2.5 rounded-xl text-xs font-medium backdrop-blur-sm active:scale-95 transition">💰 充值</button>
+                                <div class="grid grid-cols-2 gap-2 mt-4">
+                                    <button @click="openTransModal('personal_spend')" class="bg-white text-gray-900 hover:bg-gray-100 py-2.5 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition">🛍️ 現金私伙</button>
+                                    <button @click="openTransModal('personal_credit')" class="bg-purple-100 text-purple-800 hover:bg-purple-200 py-2.5 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition">💳 信用卡數</button>
+                                    <button @click="openTransModal('personal_contribute')" class="bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition">➡️ 夾錢比公數</button>
+                                    <button @click="openTransModal('personal_deposit')" class="bg-white/10 hover:bg-white/20 border border-white/10 py-2.5 rounded-xl text-xs font-medium backdrop-blur-md active:scale-95 transition">💵 記錄入現金</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div v-if="hasDebts" class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-orange-300 text-xs">
-                        <h3 class="font-bold text-gray-700 mb-2 flex items-center">⚖️ 結算中心 (未平欠款)</h3>
-                        <div v-for="(amount, name) in debtSummary.potOwes" class="flex justify-between items-center p-2 bg-orange-50 text-orange-800 rounded mb-1">
-                            <span>公數欠 <b>{{name}}</b></span>
-                            <div class="flex items-center space-x-2">
-                                <b class="font-mono">{{ activeTrip.currency || '¥' }}{{formatNumber(amount)}}</b>
-                                <button @click="settleDebt(name, amount, 'pot_pays')" class="bg-white border border-orange-200 text-orange-600 px-2 py-1 rounded text-[10px] shadow-sm active:scale-95">✅ 結清</button>
-                            </div>
-                        </div>
-                        <div v-for="(amount, name) in debtSummary.owesPot" class="flex justify-between items-center p-2 bg-blue-50 text-blue-800 rounded mb-1">
-                            <span><b>{{name}}</b> 欠公數</span>
-                            <div class="flex items-center space-x-2">
-                                <b class="font-mono">{{ activeTrip.currency || '¥' }}{{formatNumber(amount)}}</b>
-                                <button @click="settleDebt(name, amount, 'member_pays')" class="bg-white border border-blue-200 text-blue-600 px-2 py-1 rounded text-[10px] shadow-sm active:scale-95">✅ 結清</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-3">
-                        <button @click="openTransModal('advance')" class="bg-orange-50 text-orange-700 py-3 rounded-xl text-xs font-bold shadow-sm border border-orange-100 active:scale-95 transition">🙋‍♂️ 我幫公數墊錢</button>
-                        <button @click="openTransModal('borrow')" class="bg-blue-50 text-blue-700 py-3 rounded-xl text-xs font-bold shadow-sm border border-blue-100 active:scale-95 transition">🤏 我借公數錢</button>
                     </div>
                     
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden text-sm min-h-[200px]">
                         <div class="px-4 py-3 border-b border-gray-100 font-bold text-gray-600 text-xs bg-gray-50 flex justify-between items-center">
-                            <span>最近記錄</span>
+                            <span>{{ expenseMode==='pot' ? '公數記錄' : '我的記錄' }}</span>
                             <div class="flex items-center space-x-1">
                                 <span class="text-[10px] text-gray-400" v-if="expenseFilterDate">只顯示: {{ expenseFilterDate }}</span>
                                 <button @click="expenseFilterDate=''" v-if="expenseFilterDate" class="text-xs text-red-400 mr-1">清除</button>
@@ -314,23 +344,28 @@
                             </div>
                         </div>
                         <div v-if="filteredTransactions.length === 0" class="p-8 text-center text-gray-400 text-xs">
-                            {{ expenseFilterDate ? '此日無記錄' : '尚無消費記錄' }}
+                            {{ expenseFilterDate ? '此日無記錄' : '尚無記錄' }}
                         </div>
                         <div v-for="t in filteredTransactions" :key="t.id" class="p-3 border-b border-gray-100 flex justify-between items-center last:border-0 hover:bg-gray-50 transition">
                             <div class="flex items-center">
-                                <div v-if="t.type === 'spend' || t.type === 'advance'" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center mr-3 text-lg">{{ getExpCatIcon(t.category) }}</div>
-                                <div v-else-if="t.type === 'settle_in' || t.type === 'settle_out'" class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center mr-3 text-lg">🤝</div>
+                                <div v-if="t.type.includes('spend') && t.type !== 'personal_credit' || t.type === 'advance'" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center mr-3 text-lg">{{ getExpCatIcon(t.category) }}</div>
+                                <div v-else-if="t.type === 'personal_credit'" class="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center mr-3 text-lg text-purple-600">💳</div>
+                                <div v-else-if="t.type.includes('settle')" class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center mr-3 text-lg">🤝</div>
+                                <div v-else-if="t.type === 'personal_deposit'" class="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center mr-3 text-lg text-emerald-500">💵</div>
                                 <div v-else class="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center mr-3 text-lg text-indigo-500">{{ t.type === 'deposit' ? '💰' : '🤏' }}</div>
                                 <div>
                                     <p class="font-bold text-gray-800 text-xs">
                                         <span v-if="t.type.startsWith('settle')">{{ t.type === 'settle_in' ? t.who + ' 還錢比公數' : '公數還錢比 ' + t.who }}</span>
-                                        <span v-else>{{ t.desc || getExpCatLabel(t.category) }} <span v-if="t.who && t.who !== 'All' && t.who !== '公數'" class="text-[9px] text-gray-500 bg-gray-100 px-1 rounded ml-1">{{t.who}}</span></span>
+                                        <span v-else-if="t.type === 'personal_contribute'">➡️ 轉帳給公數</span>
+                                        <span v-else-if="t.type === 'personal_deposit'">💵 個人入現金</span>
+                                        <span v-else-if="t.type === 'personal_credit'">💳 {{ t.desc || getExpCatLabel(t.category) }}</span>
+                                        <span v-else>{{ t.desc || getExpCatLabel(t.category) }} <span v-if="t.who && t.who !== 'All' && t.who !== '公數' && !t.who.includes('Me')" class="text-[9px] text-gray-500 bg-gray-100 px-1 rounded ml-1">{{t.who}}</span></span>
                                     </p>
-                                    <p class="text-[9px] text-gray-400 mt-0.5">{{ t.dateStr || t.date }} · {{ getTypeText(t.type) }}</p>
+                                    <p class="text-[9px] text-gray-400 mt-0.5">{{ t.dateStr || t.date }} <span v-if="t.desc && (t.type === 'personal_deposit' || t.type === 'personal_contribute')">· {{ t.desc }}</span> <span v-else-if="t.type !== 'personal_deposit' && t.type !== 'personal_contribute' && t.type !== 'personal_credit'">· {{ getTypeText(t.type) }}</span></p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <div :class="getAmountColor(t.type)" class="font-bold text-xs">{{ t.type === 'deposit' || t.type === 'borrow' || t.type === 'settle_in' ? '+' : '-' }} {{ activeTrip.currency || '¥' }}{{ formatNumber(t.amount) }}</div>
+                                <div :class="getAmountColor(t.type)" class="font-bold text-xs">{{ t.type.includes('deposit') || t.type === 'borrow' || t.type === 'settle_in' ? '+' : '-' }} {{ activeTrip.currency || '¥' }}{{ formatNumber(t.amount) }}</div>
                                 <button @click="deleteTransaction(t.id)" class="text-gray-300 text-[10px] px-2 py-1 -mr-2">刪除</button>
                             </div>
                         </div>
@@ -497,12 +532,12 @@
                             <input v-model="transForm.date" type="date" class="flex-1 p-2 bg-transparent text-sm font-bold border-none outline-none text-gray-600">
                         </div>
 
-                        <div v-if="transMode !== 'spend'">
+                        <div v-if="transMode !== 'spend' && transMode !== 'personal_spend' && transMode !== 'personal_credit' && transMode !== 'personal_contribute' && transMode !== 'personal_deposit'">
                             <select v-if="transMode !== 'deposit'" v-model="transForm.who" class="w-full p-3 bg-gray-50 rounded-xl font-bold text-gray-700 outline-none"><option v-for="m in activeTrip.members" :value="m">{{ m }}</option></select>
                             <div v-else class="text-center text-xs text-blue-600 bg-blue-50 p-3 rounded-xl font-bold">每人 {{ activeTrip.currency || '¥' }}{{formatNumber(transForm.amount)}} (共 {{activeTrip.members.length}} 人)</div>
                         </div>
 
-                        <div v-if="transMode === 'spend' || transMode === 'advance'">
+                        <div v-if="['spend', 'personal_spend', 'personal_credit', 'advance'].includes(transMode)">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">分類</label>
                             <div class="grid grid-cols-4 gap-3">
                                 <button v-for="cat in expenseCategories" :key="cat.id" @click="transForm.category = cat.id" :class="transForm.category === cat.id ? 'bg-indigo-600 text-white shadow-md transform scale-105' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'" class="py-2 rounded-xl flex flex-col items-center justify-center transition duration-200">
@@ -511,7 +546,7 @@
                                 </button>
                             </div>
                         </div>
-                        <input v-model="transForm.desc" type="text" placeholder="備註 (例: 7-11)" class="w-full p-3 bg-gray-50 rounded-xl text-sm outline-none">
+                        <input v-model="transForm.desc" type="text" :placeholder="transMode === 'personal_deposit' ? '備註 (例: 機場禁區禁錢)' : '備註 (例: 7-11)'" class="w-full p-3 bg-gray-50 rounded-xl text-sm outline-none">
                     </div>
                     <div class="flex space-x-3 mt-8">
                         <button @click="showTransModal = false" class="flex-1 py-3 bg-gray-100 rounded-xl text-sm font-bold text-gray-500">取消</button>
@@ -637,7 +672,7 @@
                         {id:'shopping',icon:'🛍️',label:'必買'},
                         {id:'prep',icon:'📝',label:'準備'}
                     ],
-                    selectedDate: '', showFlightDetail: false, showExchangeDetail: false, showMemo: true, showSouvenirList: false, // V19
+                    selectedDate: '', showFlightDetail: false, showExchangeDetail: false, showMemo: true, showSouvenirList: false,
                     // Modals
                     showCreateModal: false, showFlightModal: false, showModal: false, showTransModal: false, showTripSettings: false, showStatsModal: false, showShopModal: false, showExchangeModal: false,
                     // Forms
@@ -648,8 +683,7 @@
                     transMode: 'spend', transForm: {amount:'', who:'', desc:'', category: 'food', date: ''},
                     exchangeForm: {hkd: '', local: ''},
                     expenseCategories: [{id: 'food', label: '食', icon: '🍜'},{id: 'drink', label: '飲', icon: '🥤'},{id: 'transport', label: '行', icon: '🚇'},{id: 'stay', label: '住', icon: '🏨'},{id: 'play', label: '玩', icon: '🎢'},{id: 'shop', label: '買', icon: '🛍️'},{id: 'ticket', label: '飛', icon: '🎫'},{id: 'misc', label: '雜', icon: '🧩'}],
-                    // V16-19 New
-                    filterMode: 'all', quickCalcVal: '', expenseFilterDate: '', newSouvenirPerson: ''
+                    filterMode: 'all', quickCalcVal: '', expenseFilterDate: '', newSouvenirPerson: '', expenseMode: 'pot'
                 }
             },
             computed: {
@@ -668,7 +702,6 @@
                     }
                     return dates;
                 },
-                // V16: Time Machine (Auto Sort) + Filter
                 filteredItinerary() { 
                     if (!this.activeTrip.itinerary) return [];
                     let items = this.activeTrip.itinerary.filter(i => i.date === this.selectedDate);
@@ -679,6 +712,13 @@
                 filteredTransactions() {
                     if (!this.activeTrip.transactions) return [];
                     let txs = this.activeTrip.transactions.slice().sort((a,b) => b.id - a.id);
+                    // V24 Logic: Filter based on view mode (Pot vs Me)
+                    if (this.expenseMode === 'me') {
+                        txs = txs.filter(t => t.type.startsWith('personal_'));
+                    } else {
+                        txs = txs.filter(t => !t.type.startsWith('personal_'));
+                    }
+                    
                     if (this.expenseFilterDate) {
                         txs = txs.filter(t => t.date === this.expenseFilterDate);
                     }
@@ -690,19 +730,18 @@
                     return this.activeTrip.transactions ? this.activeTrip.transactions.reduce((t, x) => {
                         if (x.type === 'deposit') return t + x.amount;
                         if (x.type === 'spend' || x.type === 'borrow') return t - x.amount;
-                        if (x.type === 'settle_in') return t + x.amount; // Member pays Pot (Cash Up)
-                        if (x.type === 'settle_out') return t - x.amount; // Pot pays Member (Cash Down)
+                        if (x.type === 'settle_in' || x.type === 'personal_contribute') return t + x.amount; 
+                        if (x.type === 'settle_out') return t - x.amount;
                         return t;
                     }, 0) : 0; 
                 },
                 budgetPercentage() {
                      if (!this.activeTrip.transactions) return 0;
-                     const totalIn = this.activeTrip.transactions.reduce((t, x) => (x.type === 'deposit' || x.type === 'settle_in') ? t + x.amount : t, 0);
+                     const totalIn = this.activeTrip.transactions.reduce((t, x) => (x.type === 'deposit' || x.type === 'settle_in' || x.type === 'personal_contribute') ? t + x.amount : t, 0);
                      if (totalIn === 0) return 0;
                      const current = this.walletCash;
                      return Math.max(0, Math.min(100, (current / totalIn) * 100));
                 },
-                // V20 Fixed: Computed Property for debts
                 hasDebts() {
                     if(!this.activeTrip.transactions) return false;
                     const s = this.debtSummary;
@@ -716,9 +755,8 @@
                     this.activeTrip.transactions.forEach(t=>{ 
                         if(t.type==='advance'&&t.who) potOwes[t.who]+=t.amount; 
                         if(t.type==='borrow'&&t.who) owesPot[t.who]+=t.amount; 
-                        // V21 Settle Logic
-                        if(t.type==='settle_out'&&t.who) potOwes[t.who]-=t.amount; // Pot paid back member
-                        if(t.type==='settle_in'&&t.who) owesPot[t.who]-=t.amount; // Member paid back pot
+                        if(t.type==='settle_out'&&t.who) potOwes[t.who]-=t.amount;
+                        if(t.type==='settle_in'&&t.who) owesPot[t.who]-=t.amount;
                     });
                     
                     const cleanPot={}, cleanOwes={}; 
@@ -726,7 +764,7 @@
                     for(let m in owesPot) if(Math.round(owesPot[m])>0) cleanOwes[m]=owesPot[m];
                     return {potOwes:cleanPot, owesPot:cleanOwes};
                 },
-                transTitle() { const map = { spend:'💸 公數現金支出', deposit:'💰 每人入金充值', advance:'🙋‍♂️ 幫公數墊支', borrow:'🤏 問公數借錢' }; return map[this.transMode]; },
+                transTitle() { const map = { spend:'💸 公數現金支出', deposit:'💰 每人入金充值', advance:'🙋‍♂️ 幫公數墊支', borrow:'🤏 問公數借錢', personal_spend:'🛍️ 記錄私伙支出', personal_contribute:'➡️ 轉帳給公數', personal_deposit:'💵 記錄個人現金', personal_credit:'💳 記錄信用卡數' }; return map[this.transMode]; },
                 expenseStats() {
                     if(!this.activeTrip.transactions) return {total:0, byDate:{}, byCat:{}, maxDate:0};
                     let total=0, byDate={}, byCat={};
@@ -735,6 +773,19 @@
                     const maxDate = Math.max(...Object.values(byDate), 1);
                     const sortedByDate = {}; Object.keys(byDate).sort().forEach(k => sortedByDate[k] = byDate[k]);
                     return { total, byDate: sortedByDate, byCat, maxDate };
+                },
+                // V24 Personal Stats (Credit Card independent of Cash Balance)
+                personalStats() {
+                    if(!this.activeTrip.transactions) return {totalSpend:0, spend:0, credit:0, contribute:0, deposit:0, balance:0};
+                    let spend=0, credit=0, contribute=0, deposit=0;
+                    this.activeTrip.transactions.forEach(t => {
+                        if (t.type === 'personal_spend') spend += t.amount;
+                        if (t.type === 'personal_credit') credit += t.amount;
+                        if (t.type === 'personal_contribute') contribute += t.amount;
+                        if (t.type === 'personal_deposit') deposit += t.amount;
+                    });
+                    const totalSpend = spend + credit + contribute;
+                    return { totalSpend, spend, credit, contribute, deposit, balance: deposit - spend - contribute }; 
                 },
                 exchangeSummary() {
                     if (!this.activeTrip.exchanges || this.activeTrip.exchanges.length === 0) return { totalHKD: 0, totalLocal: 0, avgRate: 0 };
@@ -760,9 +811,7 @@
                     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
                     return days > 0 ? `⏳ 還有 ${days} 天` : (days === 0 ? '✈️ 今天出發' : null);
                 },
-                // V21 Logic: Settle Debt
                 settleDebt(who, amount, type) {
-                    // type: 'pot_pays' (settle_out) or 'member_pays' (settle_in)
                     const confirmMsg = type === 'pot_pays' ? `確認公數已還 $${amount} 給 ${who}?` : `確認 ${who} 已還 $${amount} 給公數?`;
                     if(confirm(confirmMsg)) {
                         const txType = type === 'pot_pays' ? 'settle_out' : 'settle_in';
@@ -786,25 +835,22 @@
                     const txt = `✈️ ${this.activeTrip.name} 航班:\n[去] ${f.outbound.date} ${f.outbound.flight || ''} ${f.outbound.depTime}-${f.outbound.arrTime}\n[回] ${f.inbound.date} ${f.inbound.flight || ''} ${f.inbound.depTime}-${f.inbound.arrTime}`;
                     navigator.clipboard.writeText(txt).then(()=>alert('📋 航班資料已複製!'));
                 },
-                
                 saveAll() { 
                     try {
-                        localStorage.setItem('travelAppV21_Trips', JSON.stringify(this.allTrips)); 
-                        localStorage.setItem('travelAppV21_GlobalPacking', JSON.stringify(this.globalPackingList)); 
+                        localStorage.setItem('travelAppV24_Trips', JSON.stringify(this.allTrips)); 
+                        localStorage.setItem('travelAppV24_GlobalPacking', JSON.stringify(this.globalPackingList)); 
                     } catch (e) {
                         alert('⚠️ 儲存空間已滿！請備份後刪除舊旅程或圖片。');
                     }
                 },
                 loadAllData() { 
                     try {
-                        let data = localStorage.getItem('travelAppV21_Trips') || localStorage.getItem('travelAppV19_Trips') || localStorage.getItem('travelAppV16_Trips');
+                        let data = localStorage.getItem('travelAppV24_Trips') || localStorage.getItem('travelAppV23_Trips') || localStorage.getItem('travelAppV22_Trips');
                         this.allTrips = JSON.parse(data || '[]'); 
-                        // Fix for V19 new properties
                         this.allTrips.forEach(t => {
                             if(!t.souvenirPeople) t.souvenirPeople = [];
                         });
-
-                        let gp = JSON.parse(localStorage.getItem('travelAppV21_GlobalPacking') || localStorage.getItem('travelAppV19_GlobalPacking') || localStorage.getItem('travelAppV16_GlobalPacking') || 'null');
+                        let gp = JSON.parse(localStorage.getItem('travelAppV24_GlobalPacking') || localStorage.getItem('travelAppV23_GlobalPacking') || localStorage.getItem('travelAppV22_GlobalPacking') || 'null');
                         if (!gp || (Array.isArray(gp) && gp.length === 0) || (!Array.isArray(gp) && gp.checkIn.length === 0)) {
                             this.globalPackingList = {
                                 checkIn: ["髮圈","內衣褲","衣物","外套","襪子","帽子","配件","飾品","睡衣","化妝品","保養品","電棒","梳子","卸妝","洗臉","牙刷、牙膏","化妝棉","隱眼盒、隱眼藥水","隱眼","藥品","保健食品","手機充電器","行動電源充電器","Apple Watch Charger","拖鞋","垃圾袋","毛巾","口罩","盥洗用品","雨傘","泳裝","防曬用品","衛生棉","髮尾油","萬國轉接頭","Tim"],
@@ -818,8 +864,8 @@
                 },
                 clearAllData() {
                     if(confirm('⚠️ 警告：這會刪除所有資料且無法復原！確定嗎？')) {
-                        localStorage.removeItem('travelAppV21_Trips');
-                        localStorage.removeItem('travelAppV21_GlobalPacking');
+                        localStorage.removeItem('travelAppV24_Trips');
+                        localStorage.removeItem('travelAppV24_GlobalPacking');
                         location.reload();
                     }
                 },
@@ -844,7 +890,6 @@
                     }; 
                     reader.readAsDataURL(file);
                 },
-                // Smart Link (V16)
                 formatNote(text) {
                     if(!text) return '';
                     return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-500 underline break-all font-bold">🔗 連結</a>');
@@ -880,14 +925,13 @@
                 saveItem() { if (!this.form.location) return; if (this.modalMode === 'add') this.activeTrip.itinerary.push({id:Date.now(),date:this.selectedDate,...this.form}); else { const idx = this.activeTrip.itinerary.findIndex(i => i.id === this.form.id); if (idx !== -1) this.activeTrip.itinerary[idx] = { ...this.form, date: this.selectedDate }; } this.saveAll(); this.showModal=false; },
                 deleteItem(id) { if(confirm('刪除?')){this.activeTrip.itinerary=this.activeTrip.itinerary.filter(i=>i.id!==id);this.saveAll();} },
                 openGlobalPacking() { this.viewMode = 'globalPacking'; },
-                openTrip(id) { this.activeTripId = id; this.viewMode = 'trip'; this.selectedDate = this.activeTrip.startDate; this.showFlightDetail = false; this.showExchangeDetail = false; this.filterMode = 'all'; this.expenseFilterDate = ''; this.showMemo = true; this.showSouvenirList = false; },
+                openTrip(id) { this.activeTripId = id; this.viewMode = 'trip'; this.selectedDate = this.activeTrip.startDate; this.showFlightDetail = false; this.showExchangeDetail = false; this.filterMode = 'all'; this.expenseFilterDate = ''; this.showMemo = true; this.showSouvenirList = false; this.expenseMode = 'pot'; },
                 exitTrip() { this.activeTripId = null; this.viewMode = 'dashboard'; },
                 createTrip() { 
                     if(!this.createForm.name || !this.createForm.start) return alert('請填寫資料'); 
                     const newTrip = { id: Date.now(), name: this.createForm.name, startDate: this.createForm.start, endDate: this.createForm.end || this.createForm.start, members: this.createForm.membersStr.split(/[,，]/).map(s=>s.trim()).filter(s=>s).length ? this.createForm.membersStr.split(/[,，]/).map(s=>s.trim()).filter(s=>s) : ['我'], currency: this.createForm.currency, itinerary: [], shoppingList: [], transactions: [], todos: [], packingList: { carryOn:[], checkIn:[] }, exchanges: [], flights: { outbound: {date:this.createForm.start,flight:'',depTime:'',arrTime:'',depAirport:'',arrAirport:''}, inbound: {date:this.createForm.end,flight:'',depTime:'',arrTime:'',depAirport:'',arrAirport:''} }, dailyLogs: {}, memo: '', souvenirPeople: [] }; 
                     this.allTrips.push(newTrip); this.saveAll(); this.showCreateModal=false; this.createForm={name:'',start:'',end:'',membersStr:'', currency:'¥'}; 
                 },
-                // V15 Utils
                 openMap(location, link) {
                     if (link) window.open(link, '_blank');
                     else window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`, '_blank');
@@ -910,7 +954,7 @@
                     reader.onload = (e) => {
                         try {
                             const t = JSON.parse(e.target.result);
-                            t.id = Date.now(); // Reset ID to avoid conflicts
+                            t.id = Date.now(); 
                             this.allTrips.push(t);
                             this.saveAll();
                             alert('✅ 匯入成功！');
@@ -920,7 +964,6 @@
                     };
                     reader.readAsText(file);
                 },
-                // Common
                 deleteCurrentTrip() { if(confirm('刪除?')){this.allTrips=this.allTrips.filter(t=>t.id!==this.activeTripId);this.saveAll();this.exitTrip();} },
                 addGlobalItem() { const l = this.globalPackingType === 'carryOn' ? this.globalPackingList.carryOn : this.globalPackingList.checkIn; if(this.newGlobalItem){ l.push(this.newGlobalItem); this.newGlobalItem=''; this.saveAll(); } },
                 removeGlobalItem(i) { const l = this.globalPackingType === 'carryOn' ? this.globalPackingList.carryOn : this.globalPackingList.checkIn; l.splice(i,1); this.saveAll(); },
@@ -936,20 +979,33 @@
                     if(!this.transForm.amount) return; 
                     const dStr = this.transForm.date || new Date().toISOString().split('T')[0]; 
                     let t = {id:Date.now(), date: dStr, type:this.transMode, ...this.transForm}; 
-                    // V18 Fix: Format deposit amount with commas
+                    
                     if(this.transMode==='deposit') { 
                         t.amount*=this.activeTrip.members.length; t.who='All'; 
                         t.desc=`每人 ${this.activeTrip.currency || '¥'}${this.formatNumber(this.transForm.amount)}`; 
                     } else if (this.transMode === 'spend') {
                         t.who = '公數'; 
+                    } else if (this.transMode === 'personal_spend') {
+                        t.who = 'Me';
+                        t.category = this.transForm.category;
+                    } else if (this.transMode === 'personal_credit') {
+                        t.who = 'Me';
+                        t.category = this.transForm.category;
+                    } else if (this.transMode === 'personal_contribute') {
+                        t.who = 'Me';
+                        t.desc = '➡️ 轉帳給公數';
+                    } else if (this.transMode === 'personal_deposit') {
+                        t.who = 'Me';
+                        if (!t.desc) t.desc = '個人入現金';
                     }
+
                     this.activeTrip.transactions.push(t); 
                     this.saveAll(); this.showTransModal=false; 
                 },
                 deleteTransaction(id) { if(confirm('刪除此紀錄?')) { this.activeTrip.transactions = this.activeTrip.transactions.filter(t => t.id !== id); this.saveAll(); } },
                 openStats() { this.showStatsModal = true; },
                 getTypeText(t) { return {deposit:'入金',spend:'支出',advance:'墊支',borrow:'借款'}[t]||t; },
-                getAmountColor(t) { return t==='deposit'?'text-emerald-500':(t==='spend'?'text-red-500':(t==='advance'?'text-orange-500':'text-blue-500')); },
+                getAmountColor(t) { return t.includes('deposit')||t==='borrow'||t==='settle_in'?'text-emerald-500':(t.includes('spend')||t==='personal_credit'||t==='personal_contribute'||t==='settle_out'?'text-red-500':(t==='advance'?'text-orange-500':'text-blue-500')); },
                 getCategoryColor(c) { const map={sight:'border-purple-500',food:'border-orange-500',play:'border-pink-500',stay:'border-blue-500',shop:'border-pink-400',other:'border-gray-400'}; return map[c] || map.other; },
                 getCategoryBadge(c) { const map={sight:'text-purple-600 bg-purple-50',food:'text-orange-600 bg-orange-50',play:'text-pink-600 bg-pink-50',stay:'text-blue-600 bg-blue-50',shop:'text-pink-600 bg-pink-50',other:'text-gray-600 bg-gray-50'}; return map[c] || map.other; },
                 getCategoryLabel(c) { const map={sight:'景點',food:'吃喝',play:'玩樂',stay:'住宿',shop:'購物',other:'其他'}; return map[c] || '其他'; },
@@ -961,5 +1017,4 @@
         }).mount('#app');
     </script>
 </body>
-
 </html>
