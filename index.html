@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Journey v.24</title>
+    <title>My Journey v.27</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
@@ -20,9 +21,7 @@
         .img-preview { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-top: 8px; border: 1px solid #ddd; }
         .shop-thumb { width: 100%; height: 120px; object-fit: cover; border-radius: 8px 8px 0 0; }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-        .list-move, .list-enter-active, .list-leave-active { transition: all 0.4s ease; }
-        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(30px); }
-        .list-leave-active { position: absolute; width: 100%; }
+        .sortable-ghost { opacity: 0.4; transform: scale(0.98); } /* 拖拉時的半透明特效 */
     </style>
 </head>
 <body class="h-screen w-full flex justify-center bg-gray-200">
@@ -176,14 +175,16 @@
                             </button>
                          </div>
                          
-                         <div class="mt-1 flex justify-end">
+                         <div class="mt-1 flex justify-between items-center">
+                             <span v-if="filterMode !== 'all'" class="text-[9px] text-red-400 font-bold bg-red-50 px-2 py-0.5 rounded">⚠️ 篩選模式下停用拖拉排序</span>
+                             <span v-else></span>
                              <button @click="toggleFilter" class="bg-white px-3 py-1 rounded-xl border border-gray-100 shadow-sm text-[10px] font-bold text-gray-500 whitespace-nowrap active:scale-95 transition">
                                  {{ filterMode === 'all' ? '顯示: 全部' : (filterMode === 'food' ? '顯示: 只睇食🍜' : '顯示: 只睇買🛍️') }}
                              </button>
                          </div>
                     </div>
                     
-                    <transition-group name="list" tag="div" class="space-y-4 min-h-[300px] relative">
+                    <div id="itinerary-list" class="space-y-4 min-h-[300px] relative pb-10">
                         <div v-if="filteredItinerary.length === 0" class="flex flex-col items-center justify-center py-10 opacity-40 w-full absolute">
                             <span class="text-4xl mb-2">🍃</span>
                             <span class="text-sm">這天好清閒</span>
@@ -202,20 +203,32 @@
                             <div class="p-4 relative">
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center space-x-2">
-                                        <span class="font-bold text-xl text-gray-800 font-mono tracking-tight">{{ item.time }}</span>
+                                        <span v-if="item.time" class="font-bold text-xl text-gray-800 font-mono tracking-tight">{{ item.time }}</span>
+                                        <span v-else class="font-bold text-lg text-gray-400 tracking-tight">📍</span>
                                         <span class="text-[10px] px-2 py-0.5 rounded-full border font-bold" :class="getCategoryBadge(item.category)">{{ getCategoryLabel(item.category) }}</span>
                                     </div>
-                                    <button v-if="item.location" @click.stop="openMap(item.location, item.mapLink)" class="bg-gray-50 hover:bg-indigo-50 text-gray-400 hover:text-indigo-500 p-1.5 rounded-lg transition">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                    </button>
+                                    <div class="flex items-center space-x-2">
+                                        <button v-if="item.location" @click.stop="openMap(item.location, item.mapLink)" class="bg-gray-50 hover:bg-indigo-50 text-gray-400 hover:text-indigo-500 w-8 h-8 rounded-lg flex items-center justify-center transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        </button>
+                                        <div v-if="filterMode === 'all'" @click.stop class="drag-handle w-8 h-8 bg-gray-50 hover:bg-gray-100 text-gray-300 hover:text-gray-500 flex items-center justify-center rounded-lg cursor-grab active:cursor-grabbing transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" /></svg>
+                                        </div>
+                                    </div>
                                 </div>
                                 <h3 class="font-bold text-gray-800 text-lg leading-tight mb-1">{{ item.location }}</h3>
-                                <div v-if="item.note" class="mt-2 text-gray-500 text-sm whitespace-pre-wrap leading-relaxed bg-gray-50 p-2 rounded-lg border border-gray-50">
+                                
+                                <div v-if="item.note" class="mt-2 text-gray-500 text-xs whitespace-pre-wrap leading-relaxed bg-gray-50 p-2 rounded-lg border border-gray-50">
                                     <span v-html="formatNote(item.note)"></span>
+                                </div>
+
+                                <div v-if="item.transit" class="mt-3 flex items-start space-x-2 bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-100/50">
+                                    <div class="w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-sm text-[10px] flex-shrink-0">🚇</div>
+                                    <span class="text-xs text-indigo-700 font-bold leading-relaxed pt-0.5">{{ item.transit }}</span>
                                 </div>
                             </div>
                         </div>
-                    </transition-group>
+                    </div>
                     
                     <button @click="openModal('add')" class="fixed bottom-24 right-5 bg-indigo-600 text-white w-14 h-14 rounded-full shadow-xl shadow-indigo-300 flex items-center justify-center text-3xl z-30 pb-1 hover:scale-105 active:scale-90 transition">
                         <span class="relative -top-0.5">+</span>
@@ -374,21 +387,25 @@
 
                 <div v-if="currentTab === 'shopping'" class="space-y-4 p-4">
                     <div class="bg-pink-50 rounded-2xl shadow-sm border border-pink-100 overflow-hidden">
-                        <div @click="showSouvenirList = !showSouvenirList" class="px-4 py-2 flex justify-between items-center cursor-pointer bg-pink-100/50">
-                            <h4 class="text-[10px] font-bold text-pink-700 flex items-center">🎁 手信名單 Check List</h4>
-                            <span class="text-pink-600 text-[10px] transition-transform duration-200" :class="{'rotate-180': showSouvenirList}">▼</span>
+                        <div @click="showSouvenirList = !showSouvenirList" class="px-4 py-3 flex justify-between items-center cursor-pointer bg-pink-100/50 hover:bg-pink-100/80 transition">
+                            <h4 class="text-xs font-bold text-pink-700 flex items-center">🎁 手信名單 Check List</h4>
+                            <span class="text-pink-600 text-xs transition-transform duration-300" :class="{'rotate-180': showSouvenirList}">▼</span>
                         </div>
                         <transition name="expand">
                             <div v-if="showSouvenirList" class="p-3 bg-pink-50 border-t border-pink-100">
-                                <div class="flex space-x-2 mb-2">
-                                    <input v-model="newSouvenirPerson" @keyup.enter="addSouvenirPerson" placeholder="輸入人名..." class="flex-1 p-2 bg-white rounded-lg text-xs outline-none">
-                                    <button @click="addSouvenirPerson" class="bg-pink-500 text-white px-3 rounded-lg text-xs font-bold">+</button>
+                                <div class="flex space-x-2 mb-3">
+                                    <input v-model="newSouvenirPerson" @keyup.enter="addSouvenirPerson" placeholder="輸入人名 (例: 同事A)..." class="flex-1 p-2.5 bg-white rounded-xl text-xs outline-none shadow-sm border border-pink-100 focus:ring-2 focus:ring-pink-200">
+                                    <button @click="addSouvenirPerson" class="bg-pink-500 text-white px-4 rounded-xl text-sm font-bold shadow-sm active:scale-95 transition-transform">+</button>
                                 </div>
                                 <div class="flex flex-wrap gap-2">
-                                    <div v-for="(p, idx) in activeTrip.souvenirPeople" :key="idx" @click="toggleSouvenirPerson(idx)" class="px-2 py-1 rounded-lg text-xs border cursor-pointer flex items-center space-x-1" :class="p.done ? 'bg-pink-200 border-pink-300 text-pink-800 line-through opacity-70' : 'bg-white border-pink-200 text-gray-700'">
-                                        <span>{{ p.name }}</span>
-                                        <button @click.stop="removeSouvenirPerson(idx)" class="text-pink-300 hover:text-red-500 ml-1">×</button>
+                                    <div v-for="(p, idx) in activeTrip.souvenirPeople" :key="idx" @click="toggleSouvenirPerson(idx)" class="pl-2.5 pr-1 py-1.5 rounded-full text-xs border cursor-pointer flex items-center space-x-2 transition-all shadow-sm active:scale-95" :class="p.done ? 'bg-gray-50 border-gray-200 text-gray-400' : 'bg-white border-pink-200 text-pink-700 hover:border-pink-300'">
+                                        <div class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors" :class="p.done ? 'border-gray-300 bg-gray-300' : 'border-pink-400 bg-pink-50'">
+                                            <span v-if="p.done" class="text-white text-[10px] font-bold">✓</span>
+                                        </div>
+                                        <span :class="p.done ? 'line-through' : 'font-bold'">{{ p.name }}</span>
+                                        <button @click.stop="removeSouvenirPerson(idx)" class="text-gray-300 hover:text-red-500 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 transition ml-1 text-base font-light" title="刪除">×</button>
                                     </div>
+                                    <div v-if="activeTrip.souvenirPeople.length === 0" class="text-xs text-pink-300 w-full text-center py-2">尚未新增任何人名</div>
                                 </div>
                             </div>
                         </transition>
@@ -607,7 +624,7 @@
                     <div class="space-y-4">
                         <div class="flex space-x-3">
                             <div class="w-1/3">
-                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">時間</label>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">時間 (選填)</label>
                                 <input v-model="form.time" type="time" class="w-full p-3 bg-gray-50 rounded-xl border-none text-sm font-bold outline-none">
                             </div>
                             <div class="w-2/3">
@@ -620,6 +637,10 @@
                         <div>
                              <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">地點名稱</label>
                              <input v-model="form.location" placeholder="例: 淺草寺" class="w-full p-3 bg-gray-50 rounded-xl border-none font-bold text-gray-800 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">前往交通 (Transit)</label>
+                            <input v-model="form.transit" placeholder="例: 搭地鐵銀座線 (15分鐘)" class="w-full p-3 bg-gray-50 rounded-xl border-none text-sm outline-none">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Google Maps Link (選填)</label>
@@ -635,7 +656,7 @@
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">備註 (支援網址)</label>
-                            <textarea v-model="form.note" placeholder="交通方式、訂位代號、網址..." class="w-full p-3 bg-gray-50 rounded-xl border-none text-sm h-24 resize-none outline-none"></textarea>
+                            <textarea v-model="form.note" placeholder="訂位代號、網址..." class="w-full p-3 bg-gray-50 rounded-xl border-none text-sm h-20 resize-none outline-none"></textarea>
                         </div>
                     </div>
                     <div class="flex gap-3 mt-6">
@@ -678,12 +699,13 @@
                     // Forms
                     createForm: {name:'',start:'',end:'',membersStr:'', currency:'¥'},
                     newGlobalItem:'', globalPackingType: 'carryOn', newTodo:'', newPackItem:'', packingType:'carryOn', newShopItem:'',
-                    modalMode: 'add', form: {id: null, time:'10:00',location:'',note:'',category:'sight',mapLink:'',img:''},
+                    modalMode: 'add', form: {id: null, time:'',location:'',note:'',category:'sight',mapLink:'',img:'', transit:''}, // V27 Time optional default empty
                     shopMode: 'add', shopIndex: -1, shopForm: {text:'', store:'', img:'', done:false},
                     transMode: 'spend', transForm: {amount:'', who:'', desc:'', category: 'food', date: ''},
                     exchangeForm: {hkd: '', local: ''},
                     expenseCategories: [{id: 'food', label: '食', icon: '🍜'},{id: 'drink', label: '飲', icon: '🥤'},{id: 'transport', label: '行', icon: '🚇'},{id: 'stay', label: '住', icon: '🏨'},{id: 'play', label: '玩', icon: '🎢'},{id: 'shop', label: '買', icon: '🛍️'},{id: 'ticket', label: '飛', icon: '🎫'},{id: 'misc', label: '雜', icon: '🧩'}],
-                    filterMode: 'all', quickCalcVal: '', expenseFilterDate: '', newSouvenirPerson: '', expenseMode: 'pot'
+                    filterMode: 'all', quickCalcVal: '', expenseFilterDate: '', newSouvenirPerson: '', expenseMode: 'pot',
+                    sortableInstance: null // V27
                 }
             },
             computed: {
@@ -702,23 +724,22 @@
                     }
                     return dates;
                 },
+                // V27: Time Machine now sorts by 'order' property
                 filteredItinerary() { 
                     if (!this.activeTrip.itinerary) return [];
                     let items = this.activeTrip.itinerary.filter(i => i.date === this.selectedDate);
                     if (this.filterMode === 'food') items = items.filter(i => i.category === 'food' || i.category === 'drink');
                     if (this.filterMode === 'shop') items = items.filter(i => i.category === 'shop');
-                    return items.sort((a,b)=>a.time.localeCompare(b.time)); 
+                    return items.sort((a,b) => (a.order || 0) - (b.order || 0)); 
                 },
                 filteredTransactions() {
                     if (!this.activeTrip.transactions) return [];
                     let txs = this.activeTrip.transactions.slice().sort((a,b) => b.id - a.id);
-                    // V24 Logic: Filter based on view mode (Pot vs Me)
                     if (this.expenseMode === 'me') {
                         txs = txs.filter(t => t.type.startsWith('personal_'));
                     } else {
                         txs = txs.filter(t => !t.type.startsWith('personal_'));
                     }
-                    
                     if (this.expenseFilterDate) {
                         txs = txs.filter(t => t.date === this.expenseFilterDate);
                     }
@@ -774,7 +795,6 @@
                     const sortedByDate = {}; Object.keys(byDate).sort().forEach(k => sortedByDate[k] = byDate[k]);
                     return { total, byDate: sortedByDate, byCat, maxDate };
                 },
-                // V24 Personal Stats (Credit Card independent of Cash Balance)
                 personalStats() {
                     if(!this.activeTrip.transactions) return {totalSpend:0, spend:0, credit:0, contribute:0, deposit:0, balance:0};
                     let spend=0, credit=0, contribute=0, deposit=0;
@@ -793,6 +813,23 @@
                     const totalLocal = this.activeTrip.exchanges.reduce((s, i) => s + i.local, 0);
                     const avgRate = totalLocal > 0 ? (totalHKD / totalLocal) : 0;
                     return { totalHKD, totalLocal, avgRate };
+                }
+            },
+            watch: {
+                currentTab(newVal) {
+                    if (newVal === 'itinerary') {
+                        this.$nextTick(() => this.initSortable());
+                    }
+                },
+                selectedDate() {
+                    if (this.currentTab === 'itinerary') {
+                        this.$nextTick(() => this.initSortable());
+                    }
+                },
+                filterMode() {
+                    if (this.currentTab === 'itinerary') {
+                        this.$nextTick(() => this.initSortable());
+                    }
                 }
             },
             mounted() { this.loadAllData(); },
@@ -835,22 +872,80 @@
                     const txt = `✈️ ${this.activeTrip.name} 航班:\n[去] ${f.outbound.date} ${f.outbound.flight || ''} ${f.outbound.depTime}-${f.outbound.arrTime}\n[回] ${f.inbound.date} ${f.inbound.flight || ''} ${f.inbound.depTime}-${f.inbound.arrTime}`;
                     navigator.clipboard.writeText(txt).then(()=>alert('📋 航班資料已複製!'));
                 },
+                
+                // V27: Drag & Drop Logic
+                initSortable() {
+                    if (this.sortableInstance) {
+                        this.sortableInstance.destroy();
+                        this.sortableInstance = null;
+                    }
+                    if (this.filterMode !== 'all') return; // Disable drag if filtered
+
+                    const el = document.getElementById('itinerary-list');
+                    if (!el) return;
+
+                    this.sortableInstance = Sortable.create(el, {
+                        handle: '.drag-handle',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: (evt) => {
+                            if (evt.oldIndex === evt.newIndex) return;
+
+                            // Reset DOM to let Vue handle the re-render safely
+                            const itemEl = evt.item;
+                            const parent = evt.from;
+                            const originalNextSibling = parent.children[evt.oldIndex > evt.newIndex ? evt.oldIndex + 1 : evt.oldIndex];
+                            parent.insertBefore(itemEl, originalNextSibling);
+
+                            // Update data
+                            let itemsForDay = this.activeTrip.itinerary
+                                .filter(i => i.date === this.selectedDate)
+                                .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                            const movedItem = itemsForDay.splice(evt.oldIndex, 1)[0];
+                            itemsForDay.splice(evt.newIndex, 0, movedItem);
+
+                            // Assign new sequential order
+                            itemsForDay.forEach((item, index) => {
+                                const realItem = this.activeTrip.itinerary.find(i => i.id === item.id);
+                                if (realItem) realItem.order = index;
+                            });
+
+                            this.saveAll();
+                        }
+                    });
+                },
+
                 saveAll() { 
                     try {
-                        localStorage.setItem('travelAppV24_Trips', JSON.stringify(this.allTrips)); 
-                        localStorage.setItem('travelAppV24_GlobalPacking', JSON.stringify(this.globalPackingList)); 
+                        localStorage.setItem('travelAppV27_Trips', JSON.stringify(this.allTrips)); 
+                        localStorage.setItem('travelAppV27_GlobalPacking', JSON.stringify(this.globalPackingList)); 
                     } catch (e) {
                         alert('⚠️ 儲存空間已滿！請備份後刪除舊旅程或圖片。');
                     }
                 },
                 loadAllData() { 
                     try {
-                        let data = localStorage.getItem('travelAppV24_Trips') || localStorage.getItem('travelAppV23_Trips') || localStorage.getItem('travelAppV22_Trips');
+                        let data = localStorage.getItem('travelAppV27_Trips') || localStorage.getItem('travelAppV26_Trips') || localStorage.getItem('travelAppV25_Trips');
                         this.allTrips = JSON.parse(data || '[]'); 
+                        
+                        // V27 Migration: Ensure all old items have an 'order' based on legacy time sort
                         this.allTrips.forEach(t => {
                             if(!t.souvenirPeople) t.souvenirPeople = [];
+                            if(t.itinerary) {
+                                const dates = [...new Set(t.itinerary.map(i => i.date))];
+                                dates.forEach(date => {
+                                    const items = t.itinerary.filter(i => i.date === date);
+                                    if (items.some(i => i.order === undefined)) {
+                                        items.sort((a,b) => (a.time||'').localeCompare(b.time||'')).forEach((item, idx) => {
+                                            item.order = idx;
+                                        });
+                                    }
+                                });
+                            }
                         });
-                        let gp = JSON.parse(localStorage.getItem('travelAppV24_GlobalPacking') || localStorage.getItem('travelAppV23_GlobalPacking') || localStorage.getItem('travelAppV22_GlobalPacking') || 'null');
+
+                        let gp = JSON.parse(localStorage.getItem('travelAppV27_GlobalPacking') || localStorage.getItem('travelAppV26_GlobalPacking') || localStorage.getItem('travelAppV25_GlobalPacking') || 'null');
                         if (!gp || (Array.isArray(gp) && gp.length === 0) || (!Array.isArray(gp) && gp.checkIn.length === 0)) {
                             this.globalPackingList = {
                                 checkIn: ["髮圈","內衣褲","衣物","外套","襪子","帽子","配件","飾品","睡衣","化妝品","保養品","電棒","梳子","卸妝","洗臉","牙刷、牙膏","化妝棉","隱眼盒、隱眼藥水","隱眼","藥品","保健食品","手機充電器","行動電源充電器","Apple Watch Charger","拖鞋","垃圾袋","毛巾","口罩","盥洗用品","雨傘","泳裝","防曬用品","衛生棉","髮尾油","萬國轉接頭","Tim"],
@@ -864,8 +959,7 @@
                 },
                 clearAllData() {
                     if(confirm('⚠️ 警告：這會刪除所有資料且無法復原！確定嗎？')) {
-                        localStorage.removeItem('travelAppV24_Trips');
-                        localStorage.removeItem('travelAppV24_GlobalPacking');
+                        localStorage.clear();
                         location.reload();
                     }
                 },
@@ -903,9 +997,11 @@
                     if (this.filteredItinerary.length === 0) return alert('此日無行程');
                     let text = `📅 ${this.selectedDate} 行程:\n\n`;
                     this.filteredItinerary.forEach(i => {
-                        text += `⏰ ${i.time} - ${i.location}\n`;
+                        const timeStr = i.time ? `⏰ ${i.time}` : `📍`;
+                        text += `${timeStr} - ${i.location}\n`;
+                        if(i.transit) text += `🚇 ${i.transit}\n`;
                         if(i.note) text += `📝 ${i.note}\n`;
-                        if(i.mapLink) text += `📍 ${i.mapLink}\n`;
+                        if(i.mapLink) text += `🗺️ ${i.mapLink}\n`;
                         text += `\n`;
                     });
                     navigator.clipboard.writeText(text).then(() => alert('📋 已複製文字行程！可貼上 WhatsApp'));
@@ -921,8 +1017,24 @@
                 saveShopItem() { if (!this.shopForm.text) return; if(this.shopMode==='add') this.activeTrip.shoppingList.push({...this.shopForm}); else this.activeTrip.shoppingList[this.shopIndex]={...this.shopForm}; this.saveAll(); this.showShopModal=false; },
                 toggleShopItem(i) { this.activeTrip.shoppingList[i].done=!this.activeTrip.shoppingList[i].done;this.saveAll(); },
                 deleteShopItem(i) { this.activeTrip.shoppingList.splice(i,1);this.saveAll(); },
-                openModal(mode, item = null) { this.modalMode = mode; if (mode === 'edit' && item) this.form = { ...item }; else this.form = { id: null, time:'10:00',location:'',note:'',category:'sight',mapLink:'',img:'' }; this.showModal = true; },
-                saveItem() { if (!this.form.location) return; if (this.modalMode === 'add') this.activeTrip.itinerary.push({id:Date.now(),date:this.selectedDate,...this.form}); else { const idx = this.activeTrip.itinerary.findIndex(i => i.id === this.form.id); if (idx !== -1) this.activeTrip.itinerary[idx] = { ...this.form, date: this.selectedDate }; } this.saveAll(); this.showModal=false; },
+                openModal(mode, item = null) { this.modalMode = mode; if (mode === 'edit' && item) this.form = { transit: '', ...item }; else this.form = { id: null, time:'',location:'',note:'',category:'sight',mapLink:'',img:'',transit:'' }; this.showModal = true; },
+                saveItem() { 
+                    if (!this.form.location) return; 
+                    if (this.modalMode === 'add') {
+                        // Default to placing new item at the end of the day's list
+                        const dayItems = this.activeTrip.itinerary.filter(i => i.date === this.selectedDate);
+                        const nextOrder = dayItems.length > 0 ? Math.max(...dayItems.map(i => i.order || 0)) + 1 : 0;
+                        this.activeTrip.itinerary.push({id:Date.now(), date:this.selectedDate, order: nextOrder, ...this.form}); 
+                    } else { 
+                        const idx = this.activeTrip.itinerary.findIndex(i => i.id === this.form.id); 
+                        if (idx !== -1) {
+                            // Keep the original order intact when editing
+                            this.activeTrip.itinerary[idx] = { ...this.activeTrip.itinerary[idx], ...this.form, date: this.selectedDate }; 
+                        }
+                    } 
+                    this.saveAll(); 
+                    this.showModal=false; 
+                },
                 deleteItem(id) { if(confirm('刪除?')){this.activeTrip.itinerary=this.activeTrip.itinerary.filter(i=>i.id!==id);this.saveAll();} },
                 openGlobalPacking() { this.viewMode = 'globalPacking'; },
                 openTrip(id) { this.activeTripId = id; this.viewMode = 'trip'; this.selectedDate = this.activeTrip.startDate; this.showFlightDetail = false; this.showExchangeDetail = false; this.filterMode = 'all'; this.expenseFilterDate = ''; this.showMemo = true; this.showSouvenirList = false; this.expenseMode = 'pot'; },
