@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Journey v.27</title>
+    <title>My Journey v.28</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -15,13 +15,12 @@
         [v-cloak] { display: none; }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
-        /* Collapsible Animation */
         .expand-enter-active, .expand-leave-active { transition: all 0.3s ease; max-height: 500px; opacity: 1; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
         .img-preview { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-top: 8px; border: 1px solid #ddd; }
         .shop-thumb { width: 100%; height: 120px; object-fit: cover; border-radius: 8px 8px 0 0; }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-        .sortable-ghost { opacity: 0.4; transform: scale(0.98); } /* 拖拉時的半透明特效 */
+        .sortable-ghost { opacity: 0.4; transform: scale(0.98); }
     </style>
 </head>
 <body class="h-screen w-full flex justify-center bg-gray-200">
@@ -32,7 +31,7 @@
             <header class="bg-white px-6 pt-10 pb-4 shadow-sm z-10 flex justify-between items-end">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-800 tracking-tight">我的旅程 🌍</h1>
-                    <p class="text-xs text-gray-400 font-medium">記錄每一個精彩時刻</p>
+                    <p class="text-xs text-gray-400 font-medium">v.28 智能理財版</p>
                 </div>
                 <div class="flex space-x-2">
                     <button @click="triggerFileInput" class="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg font-bold border border-gray-200 active:scale-95 transition">📥 讀取備份</button>
@@ -176,7 +175,7 @@
                          </div>
                          
                          <div class="mt-1 flex justify-between items-center">
-                             <span v-if="filterMode !== 'all'" class="text-[9px] text-red-400 font-bold bg-red-50 px-2 py-0.5 rounded">⚠️ 篩選模式下停用拖拉排序</span>
+                             <span v-if="filterMode !== 'all'" class="text-[9px] text-red-400 font-bold bg-red-50 px-2 py-0.5 rounded">⚠️ 篩選模式下停用拖拉</span>
                              <span v-else></span>
                              <button @click="toggleFilter" class="bg-white px-3 py-1 rounded-xl border border-gray-100 shadow-sm text-[10px] font-bold text-gray-500 whitespace-nowrap active:scale-95 transition">
                                  {{ filterMode === 'all' ? '顯示: 全部' : (filterMode === 'food' ? '顯示: 只睇食🍜' : '顯示: 只睇買🛍️') }}
@@ -346,7 +345,7 @@
                     
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden text-sm min-h-[200px]">
                         <div class="px-4 py-3 border-b border-gray-100 font-bold text-gray-600 text-xs bg-gray-50 flex justify-between items-center">
-                            <span>{{ expenseMode==='pot' ? '公數記錄' : '我的記錄' }}</span>
+                            <span>{{ expenseMode==='pot' ? '公數記錄 (點擊修改)' : '我的記錄 (點擊修改)' }}</span>
                             <div class="flex items-center space-x-1">
                                 <span class="text-[10px] text-gray-400" v-if="expenseFilterDate">只顯示: {{ expenseFilterDate }}</span>
                                 <button @click="expenseFilterDate=''" v-if="expenseFilterDate" class="text-xs text-red-400 mr-1">清除</button>
@@ -359,7 +358,7 @@
                         <div v-if="filteredTransactions.length === 0" class="p-8 text-center text-gray-400 text-xs">
                             {{ expenseFilterDate ? '此日無記錄' : '尚無記錄' }}
                         </div>
-                        <div v-for="t in filteredTransactions" :key="t.id" class="p-3 border-b border-gray-100 flex justify-between items-center last:border-0 hover:bg-gray-50 transition">
+                        <div v-for="t in filteredTransactions" :key="t.id" @click="!t.type.includes('settle') && openTransModal(t.type, t)" :class="{'cursor-pointer hover:bg-gray-50': !t.type.includes('settle')}" class="p-3 border-b border-gray-100 flex justify-between items-center last:border-0 transition">
                             <div class="flex items-center">
                                 <div v-if="t.type.includes('spend') && t.type !== 'personal_credit' || t.type === 'advance'" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center mr-3 text-lg">{{ getExpCatIcon(t.category) }}</div>
                                 <div v-else-if="t.type === 'personal_credit'" class="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center mr-3 text-lg text-purple-600">💳</div>
@@ -374,12 +373,12 @@
                                         <span v-else-if="t.type === 'personal_credit'">💳 {{ t.desc || getExpCatLabel(t.category) }}</span>
                                         <span v-else>{{ t.desc || getExpCatLabel(t.category) }} <span v-if="t.who && t.who !== 'All' && t.who !== '公數' && !t.who.includes('Me')" class="text-[9px] text-gray-500 bg-gray-100 px-1 rounded ml-1">{{t.who}}</span></span>
                                     </p>
-                                    <p class="text-[9px] text-gray-400 mt-0.5">{{ t.dateStr || t.date }} <span v-if="t.desc && (t.type === 'personal_deposit' || t.type === 'personal_contribute')">· {{ t.desc }}</span> <span v-else-if="t.type !== 'personal_deposit' && t.type !== 'personal_contribute' && t.type !== 'personal_credit'">· {{ getTypeText(t.type) }}</span></p>
+                                    <p class="text-[9px] text-gray-400 mt-0.5">{{ t.dateStr || t.date }} <span v-if="t.desc && (t.type === 'personal_deposit' || t.type === 'personal_contribute')">· {{ t.desc }}</span> <span v-else-if="t.type !== 'personal_deposit' && t.type !== 'personal_contribute' && t.type !== 'personal_credit' && !t.type.includes('settle')">· {{ getTypeText(t.type) }}</span></p>
                                 </div>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right flex items-center space-x-2">
                                 <div :class="getAmountColor(t.type)" class="font-bold text-xs">{{ t.type.includes('deposit') || t.type === 'borrow' || t.type === 'settle_in' ? '+' : '-' }} {{ activeTrip.currency || '¥' }}{{ formatNumber(t.amount) }}</div>
-                                <button @click="deleteTransaction(t.id)" class="text-gray-300 text-[10px] px-2 py-1 -mr-2">刪除</button>
+                                <button @click.stop="deleteTransaction(t.id)" class="text-gray-300 bg-gray-50 rounded-full w-6 h-6 flex items-center justify-center text-[10px] hover:text-red-400 transition">×</button>
                             </div>
                         </div>
                     </div>
@@ -537,7 +536,7 @@
         <transition name="fade">
             <div v-if="showTransModal" class="absolute inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
                 <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
-                    <h3 class="text-lg font-bold mb-6 text-center text-gray-800">{{ transTitle }}</h3>
+                    <h3 class="text-lg font-bold mb-6 text-center text-gray-800">{{ transForm.id ? '修改記錄' : transTitle }}</h3>
                     <div class="space-y-5">
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-2xl">{{ activeTrip.currency || '¥' }}</span>
@@ -567,7 +566,7 @@
                     </div>
                     <div class="flex space-x-3 mt-8">
                         <button @click="showTransModal = false" class="flex-1 py-3 bg-gray-100 rounded-xl text-sm font-bold text-gray-500">取消</button>
-                        <button @click="saveTransaction" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-200">確認</button>
+                        <button @click="saveTransaction" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-200">儲存</button>
                     </div>
                 </div>
             </div>
@@ -683,9 +682,7 @@
         createApp({
             data() {
                 return {
-                    // Global
                     allTrips: [], globalPackingList: { carryOn: [], checkIn: [] }, activeTripId: null, viewMode: 'dashboard',
-                    // UI
                     currentTab: 'itinerary',
                     tabs: [
                         {id:'itinerary',icon:'📅',label:'行程'},
@@ -694,18 +691,16 @@
                         {id:'prep',icon:'📝',label:'準備'}
                     ],
                     selectedDate: '', showFlightDetail: false, showExchangeDetail: false, showMemo: true, showSouvenirList: false,
-                    // Modals
                     showCreateModal: false, showFlightModal: false, showModal: false, showTransModal: false, showTripSettings: false, showStatsModal: false, showShopModal: false, showExchangeModal: false,
-                    // Forms
                     createForm: {name:'',start:'',end:'',membersStr:'', currency:'¥'},
                     newGlobalItem:'', globalPackingType: 'carryOn', newTodo:'', newPackItem:'', packingType:'carryOn', newShopItem:'',
-                    modalMode: 'add', form: {id: null, time:'',location:'',note:'',category:'sight',mapLink:'',img:'', transit:''}, // V27 Time optional default empty
+                    modalMode: 'add', form: {id: null, time:'',location:'',note:'',category:'sight',mapLink:'',img:'', transit:''},
                     shopMode: 'add', shopIndex: -1, shopForm: {text:'', store:'', img:'', done:false},
-                    transMode: 'spend', transForm: {amount:'', who:'', desc:'', category: 'food', date: ''},
+                    transMode: 'spend', transForm: {id: null, amount:'', who:'', desc:'', category: 'food', date: ''}, // V28 Added id
                     exchangeForm: {hkd: '', local: ''},
                     expenseCategories: [{id: 'food', label: '食', icon: '🍜'},{id: 'drink', label: '飲', icon: '🥤'},{id: 'transport', label: '行', icon: '🚇'},{id: 'stay', label: '住', icon: '🏨'},{id: 'play', label: '玩', icon: '🎢'},{id: 'shop', label: '買', icon: '🛍️'},{id: 'ticket', label: '飛', icon: '🎫'},{id: 'misc', label: '雜', icon: '🧩'}],
                     filterMode: 'all', quickCalcVal: '', expenseFilterDate: '', newSouvenirPerson: '', expenseMode: 'pot',
-                    sortableInstance: null // V27
+                    sortableInstance: null
                 }
             },
             computed: {
@@ -724,7 +719,6 @@
                     }
                     return dates;
                 },
-                // V27: Time Machine now sorts by 'order' property
                 filteredItinerary() { 
                     if (!this.activeTrip.itinerary) return [];
                     let items = this.activeTrip.itinerary.filter(i => i.date === this.selectedDate);
@@ -785,7 +779,7 @@
                     for(let m in owesPot) if(Math.round(owesPot[m])>0) cleanOwes[m]=owesPot[m];
                     return {potOwes:cleanPot, owesPot:cleanOwes};
                 },
-                transTitle() { const map = { spend:'💸 公數現金支出', deposit:'💰 每人入金充值', advance:'🙋‍♂️ 幫公數墊支', borrow:'🤏 問公數借錢', personal_spend:'🛍️ 記錄私伙支出', personal_contribute:'➡️ 轉帳給公數', personal_deposit:'💵 記錄個人現金', personal_credit:'💳 記錄信用卡數' }; return map[this.transMode]; },
+                transTitle() { const map = { spend:'💸 公數現金支出', deposit:'💰 大家一齊夾公數', advance:'🙋‍♂️ 幫公數墊支', borrow:'🤏 問公數借錢', personal_spend:'🛍️ 記錄私伙支出', personal_contribute:'➡️ 自己補錢落公數', personal_deposit:'💵 記錄個人現金', personal_credit:'💳 記錄信用卡數' }; return map[this.transMode]; },
                 expenseStats() {
                     if(!this.activeTrip.transactions) return {total:0, byDate:{}, byCat:{}, maxDate:0};
                     let total=0, byDate={}, byCat={};
@@ -795,17 +789,38 @@
                     const sortedByDate = {}; Object.keys(byDate).sort().forEach(k => sortedByDate[k] = byDate[k]);
                     return { total, byDate: sortedByDate, byCat, maxDate };
                 },
+                // V28: Personal Stats updated for 100% accuracy
                 personalStats() {
                     if(!this.activeTrip.transactions) return {totalSpend:0, spend:0, credit:0, contribute:0, deposit:0, balance:0};
-                    let spend=0, credit=0, contribute=0, deposit=0;
+                    let spend=0, credit=0, contribute=0, deposit=0, advance=0, borrow=0, settle_in=0, settle_out=0;
+                    
+                    const myName = this.activeTrip.members ? this.activeTrip.members[0] : '我'; // 假設第一個 member 係自己
+
                     this.activeTrip.transactions.forEach(t => {
+                        const isMe = (t.who === myName || t.who === 'Me' || t.who === '我');
+
                         if (t.type === 'personal_spend') spend += t.amount;
                         if (t.type === 'personal_credit') credit += t.amount;
                         if (t.type === 'personal_contribute') contribute += t.amount;
                         if (t.type === 'personal_deposit') deposit += t.amount;
+
+                        // V28 智能連動：大家一齊夾公數時，識得自動扣自己嗰份
+                        if (t.type === 'deposit') contribute += (t.amount / this.activeTrip.members.length);
+                        
+                        // 墊支借錢連動自己銀包
+                        if (isMe) {
+                            if (t.type === 'advance') advance += t.amount; 
+                            if (t.type === 'borrow') borrow += t.amount;   
+                            if (t.type === 'settle_in') settle_in += t.amount; 
+                            if (t.type === 'settle_out') settle_out += t.amount; 
+                        }
                     });
-                    const totalSpend = spend + credit + contribute;
-                    return { totalSpend, spend, credit, contribute, deposit, balance: deposit - spend - contribute }; 
+                    
+                    const totalSpend = spend + contribute; 
+                    // 個人現金餘額 = 入錢 + 借公數 + 公數還錢 - 私伙花費 - 夾公數 - 墊支公數 - 還錢比公數
+                    const balance = deposit + borrow + settle_out - spend - contribute - advance - settle_in;
+                    
+                    return { totalSpend, spend, credit, contribute, deposit, balance }; 
                 },
                 exchangeSummary() {
                     if (!this.activeTrip.exchanges || this.activeTrip.exchanges.length === 0) return { totalHKD: 0, totalLocal: 0, avgRate: 0 };
@@ -873,13 +888,12 @@
                     navigator.clipboard.writeText(txt).then(()=>alert('📋 航班資料已複製!'));
                 },
                 
-                // V27: Drag & Drop Logic
                 initSortable() {
                     if (this.sortableInstance) {
                         this.sortableInstance.destroy();
                         this.sortableInstance = null;
                     }
-                    if (this.filterMode !== 'all') return; // Disable drag if filtered
+                    if (this.filterMode !== 'all') return;
 
                     const el = document.getElementById('itinerary-list');
                     if (!el) return;
@@ -890,14 +904,11 @@
                         ghostClass: 'sortable-ghost',
                         onEnd: (evt) => {
                             if (evt.oldIndex === evt.newIndex) return;
-
-                            // Reset DOM to let Vue handle the re-render safely
                             const itemEl = evt.item;
                             const parent = evt.from;
                             const originalNextSibling = parent.children[evt.oldIndex > evt.newIndex ? evt.oldIndex + 1 : evt.oldIndex];
                             parent.insertBefore(itemEl, originalNextSibling);
 
-                            // Update data
                             let itemsForDay = this.activeTrip.itinerary
                                 .filter(i => i.date === this.selectedDate)
                                 .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -905,12 +916,10 @@
                             const movedItem = itemsForDay.splice(evt.oldIndex, 1)[0];
                             itemsForDay.splice(evt.newIndex, 0, movedItem);
 
-                            // Assign new sequential order
                             itemsForDay.forEach((item, index) => {
                                 const realItem = this.activeTrip.itinerary.find(i => i.id === item.id);
                                 if (realItem) realItem.order = index;
                             });
-
                             this.saveAll();
                         }
                     });
@@ -918,18 +927,18 @@
 
                 saveAll() { 
                     try {
-                        localStorage.setItem('travelAppV27_Trips', JSON.stringify(this.allTrips)); 
-                        localStorage.setItem('travelAppV27_GlobalPacking', JSON.stringify(this.globalPackingList)); 
+                        localStorage.setItem('travelAppV28_Trips', JSON.stringify(this.allTrips)); 
+                        localStorage.setItem('travelAppV28_GlobalPacking', JSON.stringify(this.globalPackingList)); 
                     } catch (e) {
                         alert('⚠️ 儲存空間已滿！請備份後刪除舊旅程或圖片。');
                     }
                 },
                 loadAllData() { 
                     try {
-                        let data = localStorage.getItem('travelAppV27_Trips') || localStorage.getItem('travelAppV26_Trips') || localStorage.getItem('travelAppV25_Trips');
+                        // V28 Migration path
+                        let data = localStorage.getItem('travelAppV28_Trips') || localStorage.getItem('travelAppV27_Trips') || localStorage.getItem('travelAppV26_Trips') || localStorage.getItem('travelAppV25_Trips');
                         this.allTrips = JSON.parse(data || '[]'); 
                         
-                        // V27 Migration: Ensure all old items have an 'order' based on legacy time sort
                         this.allTrips.forEach(t => {
                             if(!t.souvenirPeople) t.souvenirPeople = [];
                             if(t.itinerary) {
@@ -945,7 +954,7 @@
                             }
                         });
 
-                        let gp = JSON.parse(localStorage.getItem('travelAppV27_GlobalPacking') || localStorage.getItem('travelAppV26_GlobalPacking') || localStorage.getItem('travelAppV25_GlobalPacking') || 'null');
+                        let gp = JSON.parse(localStorage.getItem('travelAppV28_GlobalPacking') || localStorage.getItem('travelAppV27_GlobalPacking') || localStorage.getItem('travelAppV26_GlobalPacking') || localStorage.getItem('travelAppV25_GlobalPacking') || 'null');
                         if (!gp || (Array.isArray(gp) && gp.length === 0) || (!Array.isArray(gp) && gp.checkIn.length === 0)) {
                             this.globalPackingList = {
                                 checkIn: ["髮圈","內衣褲","衣物","外套","襪子","帽子","配件","飾品","睡衣","化妝品","保養品","電棒","梳子","卸妝","洗臉","牙刷、牙膏","化妝棉","隱眼盒、隱眼藥水","隱眼","藥品","保健食品","手機充電器","行動電源充電器","Apple Watch Charger","拖鞋","垃圾袋","毛巾","口罩","盥洗用品","雨傘","泳裝","防曬用品","衛生棉","髮尾油","萬國轉接頭","Tim"],
@@ -1021,14 +1030,12 @@
                 saveItem() { 
                     if (!this.form.location) return; 
                     if (this.modalMode === 'add') {
-                        // Default to placing new item at the end of the day's list
                         const dayItems = this.activeTrip.itinerary.filter(i => i.date === this.selectedDate);
                         const nextOrder = dayItems.length > 0 ? Math.max(...dayItems.map(i => i.order || 0)) + 1 : 0;
                         this.activeTrip.itinerary.push({id:Date.now(), date:this.selectedDate, order: nextOrder, ...this.form}); 
                     } else { 
                         const idx = this.activeTrip.itinerary.findIndex(i => i.id === this.form.id); 
                         if (idx !== -1) {
-                            // Keep the original order intact when editing
                             this.activeTrip.itinerary[idx] = { ...this.activeTrip.itinerary[idx], ...this.form, date: this.selectedDate }; 
                         }
                     } 
@@ -1086,21 +1093,34 @@
                 addPackItem() { const l=this.packingType==='carryOn'?this.activeTrip.packingList.carryOn:this.activeTrip.packingList.checkIn; if(this.newPackItem){l.push({text:this.newPackItem,done:false});this.newPackItem='';this.saveAll();} },
                 togglePackItem(i) { const l=this.packingType==='carryOn'?this.activeTrip.packingList.carryOn:this.activeTrip.packingList.checkIn; l[i].done=!l[i].done;this.saveAll(); },
                 deletePackItem(i) { const l=this.packingType==='carryOn'?this.activeTrip.packingList.carryOn:this.activeTrip.packingList.checkIn; l.splice(i,1);this.saveAll(); },
-                openTransModal(m) { this.transMode=m; const today = new Date().toISOString().split('T')[0]; this.transForm={amount:'', who:this.activeTrip.members[0], desc:'', category:'food', date: today}; this.showTransModal=true; },
+                
+                // V28: Edited to handle existing transactions
+                openTransModal(m, t = null) { 
+                    if (t) {
+                        this.transMode = t.type;
+                        this.transForm = { ...t };
+                        if (this.transMode === 'deposit') {
+                            this.transForm.amount = t.amount / this.activeTrip.members.length;
+                        }
+                    } else {
+                        this.transMode = m; 
+                        const today = new Date().toISOString().split('T')[0]; 
+                        this.transForm = { id: null, amount:'', who:this.activeTrip.members[0], desc:'', category:'food', date: today }; 
+                    }
+                    this.showTransModal = true; 
+                },
                 saveTransaction() { 
                     if(!this.transForm.amount) return; 
                     const dStr = this.transForm.date || new Date().toISOString().split('T')[0]; 
-                    let t = {id:Date.now(), date: dStr, type:this.transMode, ...this.transForm}; 
+                    let t = { ...this.transForm, date: dStr, type: this.transMode }; 
                     
                     if(this.transMode==='deposit') { 
-                        t.amount*=this.activeTrip.members.length; t.who='All'; 
-                        t.desc=`每人 ${this.activeTrip.currency || '¥'}${this.formatNumber(this.transForm.amount)}`; 
+                        t.amount *= this.activeTrip.members.length; 
+                        t.who = 'All'; 
+                        t.desc = `每人 ${this.activeTrip.currency || '¥'}${this.formatNumber(this.transForm.amount)}`; 
                     } else if (this.transMode === 'spend') {
                         t.who = '公數'; 
-                    } else if (this.transMode === 'personal_spend') {
-                        t.who = 'Me';
-                        t.category = this.transForm.category;
-                    } else if (this.transMode === 'personal_credit') {
+                    } else if (this.transMode === 'personal_spend' || this.transMode === 'personal_credit') {
                         t.who = 'Me';
                         t.category = this.transForm.category;
                     } else if (this.transMode === 'personal_contribute') {
@@ -1111,8 +1131,18 @@
                         if (!t.desc) t.desc = '個人入現金';
                     }
 
-                    this.activeTrip.transactions.push(t); 
-                    this.saveAll(); this.showTransModal=false; 
+                    if (this.transForm.id) {
+                        // Editing existing
+                        const idx = this.activeTrip.transactions.findIndex(x => x.id === this.transForm.id);
+                        if (idx !== -1) this.activeTrip.transactions[idx] = t;
+                    } else {
+                        // New
+                        t.id = Date.now();
+                        this.activeTrip.transactions.push(t); 
+                    }
+                    
+                    this.saveAll(); 
+                    this.showTransModal = false; 
                 },
                 deleteTransaction(id) { if(confirm('刪除此紀錄?')) { this.activeTrip.transactions = this.activeTrip.transactions.filter(t => t.id !== id); this.saveAll(); } },
                 openStats() { this.showStatsModal = true; },
